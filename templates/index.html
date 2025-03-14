@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Recognition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #4A148C, #FFD700);
+            color: white;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        #output {
+            text-align: left;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            width: 350px;
+        }
+        #image-container {
+            margin-right: 20px;
+        }
+        img {
+            max-width: 350px;
+            border: 3px solid #FFD700;
+            border-radius: 10px;
+            transition: transform 0.3s ease-in-out;
+        }
+        img:hover {
+            transform: scale(1.05);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+            color: black;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #FFD700;
+            color: #4A148C;
+        }
+        button {
+            margin-top: 15px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #4A148C;
+            background: #FFD700;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        #fileInput {
+            margin-top: 15px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #4A148C;
+            background: #FFD700;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        button:hover {
+            background: #4A148C;
+            color: white;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Object Recognition App</h1>
+    <input type="file" id="fileInput" accept="image/*">
+    <button onclick="uploadFile()">Upload & Detect</button>
+
+    <div class="container">
+        <div id="image-container">
+            <img id="detectedImage" style="display:none;">
+        </div>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        function uploadFile() {
+            let fileInput = document.getElementById("fileInput");
+            let file = fileInput.files[0];
+
+            if (!file) {
+                alert("Please select a file first.");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("file", file);
+
+            fetch("/upload", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                let output = document.getElementById("output");
+                let img = document.getElementById("detectedImage");
+
+                if (data.error) {
+                    output.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
+                    img.style.display = "none";
+                } else {
+                    let detectedObjects = data.objects.map(obj => 
+                        `<tr>
+                            <td>${obj.name}</td>
+                            <td>${obj.bbox.join(", ")}</td>
+                        </tr>`
+                    ).join("");
+
+                    output.innerHTML = `
+                        <h3>Detected Objects (${data.objects.length}):</h3>
+                        <table>
+                            <tr>
+                                <th>Object</th>
+                                <th>Bounding Box (x1, y1, x2, y2)</th>
+                            </tr>
+                            ${detectedObjects}
+                        </table>
+                        <p><strong>Total Processing Time:</strong> ${data.detection_speed} ms</p>
+                        <p><strong>Inference Time:</strong> ${data.inference_time} ms</p>
+                    `;
+
+                    img.src = data.image_url;
+                    img.style.display = "block";
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+    </script>
+</body>
+</html>
